@@ -1,2 +1,0 @@
-CONTAINER ID   NAME      CPU %     MEM USAGE / LIMIT   MEM %     NET I/O        BLOCK I/O     PIDS
-610f728390fa   service   0.01%     8.91MiB / 512MiB    1.74%     1.7kB / 126B   13.8MB / 0B   1

@@ -1,0 +1,10 @@
+,Swappiness,Stress,Req/sec,Failed,Δpgmajfault,Δpswpin,Δpswpout
+3,10,extreme,2108.85,1,0,0,307200
+4,10,high,2026.32,0,2,0,0
+5,10,moderate,1624.82,0,1,0,204800
+0,100,extreme,2016.43,0,0,0,0
+1,100,high,2090.56,0,0,0,204800
+2,100,moderate,1623.9,0,0,0,0
+6,60,extreme,2058.75,0,0,0,0
+7,60,high,2064.78,0,0,0,204800
+8,60,moderate,989.12,1,0,0,204800

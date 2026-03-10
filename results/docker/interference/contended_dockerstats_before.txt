@@ -1,3 +1,0 @@
-CONTAINER ID   NAME       CPU %     MEM USAGE / LIMIT   MEM %     NET I/O        BLOCK I/O        PIDS
-2109992d0ed9   service    0.05%     8.496MiB / 512MiB   1.66%     1.3kB / 126B   0B / 0B          1
-d8dde1d58f87   stressor   100.05%   605.4MiB / 700MiB   86.49%    872B / 126B    4.51MB / 278MB   3
