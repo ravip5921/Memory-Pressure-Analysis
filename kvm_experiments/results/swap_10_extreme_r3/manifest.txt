@@ -1,7 +1,7 @@
 run_type=stressed
-run_timestamp=2026-04-08T21:58:29+00:00
-repeat_index=2
-swappiness=100
+run_timestamp=2026-04-08T21:51:28+00:00
+repeat_index=3
+swappiness=10
 stress_level=extreme
 stress_bytes=1200m
 ab_concurrency=30
@@ -10,4 +10,4 @@ ab_runtime_seconds=30
 ab_timeout_seconds=600
 target_url=http://127.0.0.1:8080/
 kernel=5.15.0-119-generic
-swappiness_effective=100
+swappiness_effective=10

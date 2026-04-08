@@ -1,9 +1,9 @@
 run_type=stressed
-run_timestamp=2026-04-08T21:58:29+00:00
-repeat_index=2
+run_timestamp=2026-04-08T21:53:53+00:00
+repeat_index=3
 swappiness=100
-stress_level=extreme
-stress_bytes=1200m
+stress_level=moderate
+stress_bytes=400m
 ab_concurrency=30
 ab_requests=2000
 ab_runtime_seconds=30
