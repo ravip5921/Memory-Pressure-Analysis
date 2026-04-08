@@ -1,9 +1,0 @@
-scripts/helper/vmstat_delta.sh results/docker/interference/contended_host_vmstat_before.txt results/docker/interference/contended_host_vmstat_after.txt > results/docker/interference/summarized_results/host_vmstat_delta.csv
-
-
-scripts/helper/vmstat_delta.sh results/docker/interference/contended_c1_vmstat_before.txt results/docker/interference/contended_c1_vmstat_after.txt > results/docker/interference/summarized_results/c1_vmstat_delta.csv
-
-
-scripts/helper/vmstat_delta.sh results/docker/interference/contended_c2_vmstat_before.txt results/docker/interference/contended_c2_vmstat_after.txt > results/docker/interference/summarized_results/c2_vmstat_delta.csv
-
-scripts/helper/compute_slowdown.sh results/docker/interference/baseline.txt results/docker/interference/contended.txt
