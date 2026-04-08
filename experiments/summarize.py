@@ -94,4 +94,4 @@ df = pd.DataFrame(rows, columns=[
 df = df.sort_values(["Swappiness", "Stress"])
 print(df.to_string(index=False))
 
-df.to_csv("corr_rt_30_timeout_600_with_slowdown_global_baseline.csv", index=False)
+df.to_csv("corr_rt_30_timeout_600_with_slowdown_global_baseline_linux.csv", index=False)

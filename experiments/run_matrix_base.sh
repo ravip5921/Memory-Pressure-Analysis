@@ -1,18 +1,18 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+# Resolve script dir and load config
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/configs.sh"
 
 # Prevent running the whole script as root/sudo because Docker Desktop's
 # socket/context is per-user and running as root will cause the Docker CLI
-# to try /var/run/docker.sock (which doesn't exist for Docker Desktop),
-# leading to the "failed to connect to the docker API at unix:///var/run/docker.sock" error.
+# to try /var/run/docker.sock (which doesn't exist for Docker Desktop).
 if [ "$(id -u)" -eq 0 ]; then
   echo "Do NOT run this script with sudo/root."
   echo "Run it as your regular user (it will use 'sudo' internally where needed)."
-  echo "Example: ./experiments/run_matrix.sh"
   exit 1
 fi
-
-source ./experiments/configs.sh
 
 # Quick check that the Docker CLI can contact a server
 if ! docker version >/dev/null 2>&1; then
@@ -26,9 +26,9 @@ for SWAP in "${SWAPPINESS_LEVELS[@]}"
 do
   for LEVEL in "${!STRESS_LEVELS[@]}"
   do
-    ./experiments/run_one.sh $SWAP $LEVEL
+    "$SCRIPT_DIR/run_base.sh" "$SWAP" "$LEVEL"
     sleep 10
   done
 done
 
-echo "All experiments complete."
+echo "All baseline experiments complete."

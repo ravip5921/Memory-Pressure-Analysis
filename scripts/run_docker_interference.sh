@@ -1,6 +1,20 @@
 #!/bin/bash
 set -e
 
+# Prevent running the whole script as root/sudo for the same reasons as other experiment scripts.
+if [ "$(id -u)" -eq 0 ]; then
+  echo "Do NOT run this script with sudo/root."
+  echo "Run it as your regular user (it will use 'sudo' internally where needed if necessary)."
+  exit 1
+fi
+
+# Quick check that Docker is reachable
+if ! docker version >/dev/null 2>&1; then
+  echo "Docker CLI cannot contact a Docker daemon. Ensure Docker Desktop is running and your CLI context is correct."
+  echo "Try: docker context ls && docker context use desktop-linux"
+  exit 1
+fi
+
 OUTDIR="results/docker/interference"
 IMAGE_NAME="memory-pressure-app"
 

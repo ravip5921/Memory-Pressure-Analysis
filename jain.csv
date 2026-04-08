@@ -1,0 +1,5 @@
+workload,workload_ab,workload_rps,baseline_ab,baseline_rps,normalized_x
+swap_10_extreme,experiments/results/swap_10_extreme/ab.txt,1554.950000,experiments/results/baseline_swap_10_extreme/ab.txt,1814.210000,0.857095
+swap_10_high,experiments/results/swap_10_high/ab.txt,1691.290000,experiments/results/baseline_swap_10_high/ab.txt,1708.510000,0.989921
+swap_10_moderate,experiments/results/swap_10_moderate/ab.txt,1766.990000,experiments/results/baseline_swap_10_moderate/ab.txt,1035.330000,1.706693
+jain,,0.909724,,,
