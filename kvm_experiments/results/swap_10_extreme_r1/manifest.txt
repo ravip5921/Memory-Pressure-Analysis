@@ -1,0 +1,13 @@
+run_type=stressed
+run_timestamp=2026-04-08T20:59:45+00:00
+repeat_index=1
+swappiness=10
+stress_level=extreme
+stress_bytes=1200m
+ab_concurrency=30
+ab_requests=2000
+ab_runtime_seconds=30
+ab_timeout_seconds=600
+target_url=http://127.0.0.1:8080/
+kernel=5.15.0-119-generic
+swappiness_effective=10
