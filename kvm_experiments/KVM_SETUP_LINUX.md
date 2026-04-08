@@ -116,6 +116,7 @@ bash kvm_experiments/preflight.sh
 bash kvm_experiments/run_base.sh
 bash kvm_experiments/run_matrix.sh
 python3 kvm_experiments/summarize.py
+python3 kvm_experiments/plot_results.py
 ```
 
 Or run baseline + matrix together:
@@ -130,6 +131,7 @@ bash kvm_experiments/run_matrix_base.sh
 - Raw run table: `kvm_experiments/summary_runs_raw.csv`
 - Aggregated table: `kvm_experiments/summary_aggregated.csv`
 - Legacy-compatible aggregate filename: `kvm_experiments/corr_rt_30_timeout_600_with_slowdown_global_baseline_linux_kvm.csv`
+- Plot directory: `kvm_experiments/plots`
 
 ## 9. Troubleshooting
 

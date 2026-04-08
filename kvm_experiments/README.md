@@ -32,6 +32,10 @@ This directory contains a VM-native version of the memory-pressure experiments.
    ```bash
    python3 kvm_experiments/summarize.py
    ```
+6. Plot results:
+   ```bash
+   python3 kvm_experiments/plot_results.py
+   ```
 
 ## One-command baseline + matrix
 ```bash
@@ -54,3 +58,4 @@ bash kvm_experiments/run_matrix.sh --list-missing
 - Use a non-root user; scripts call `sudo` only where required for sysctl/dmesg.
 - Results are written to `kvm_experiments/results`.
 - Baseline policy is single global baseline at swappiness 60 by default.
+- Plot outputs are written to `kvm_experiments/plots`.
