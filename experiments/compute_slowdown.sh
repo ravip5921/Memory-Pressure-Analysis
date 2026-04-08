@@ -1,25 +1,47 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-BASE_AB=$1   # e.g., results/baseline/ab.txt
-RUNS_DIR=$2  # e.g., results/swap_*/*
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNS_DIR="${1:-$SCRIPT_DIR/results}"
+BASE_AB="$RUNS_DIR/baseline/ab.txt"
+OUTFILE="$SCRIPT_DIR/summary_slowdown_raw.csv"
 
-OUTFILE="$RUNS_DIR/summary_slowdown.csv"
-echo "Swappiness,Stress,Req/sec,Slowdown" > "$OUTFILE"
+if [[ ! -f "$BASE_AB" ]]; then
+    echo "ERROR: missing baseline AB file: $BASE_AB" >&2
+    exit 1
+fi
 
 BASE_RPS=$(grep "Requests per second" "$BASE_AB" | awk '{print $4}')
+if [[ -z "$BASE_RPS" ]]; then
+    echo "ERROR: failed to parse baseline Requests per second" >&2
+    exit 1
+fi
 
-for AB_FILE in $(find "$RUNS_DIR" -name "ab.txt"); do
+echo "Swappiness,Stress,Repeat,ReqPerSec,Slowdown" > "$OUTFILE"
+
+while IFS= read -r AB_FILE; do
     DIR=$(dirname "$AB_FILE")
-    # Extract swappiness and stress from folder name
     NAME=$(basename "$DIR")
-    SWAP=$(echo "$NAME" | cut -d'_' -f2)
-    STRESS=$(echo "$NAME" | cut -d'_' -f3)
+
+    if [[ "$NAME" == "baseline" ]]; then
+        continue
+    fi
+
+    if [[ ! "$NAME" =~ ^swap_([0-9]+)_(moderate|high|extreme)_r([0-9]+)$ ]]; then
+        continue
+    fi
+
+    SWAP="${BASH_REMATCH[1]}"
+    STRESS="${BASH_REMATCH[2]}"
+    REPEAT="${BASH_REMATCH[3]}"
 
     RPS=$(grep "Requests per second" "$AB_FILE" | awk '{print $4}')
-    SLOWDOWN=$(echo "scale=4; $BASE_RPS / $RPS" | bc -l)
+    if [[ -z "$RPS" ]]; then
+        continue
+    fi
 
-    echo "$SWAP,$STRESS,$RPS,$SLOWDOWN" >> "$OUTFILE"
-done
+    SLOWDOWN=$(echo "scale=6; $BASE_RPS / $RPS" | bc -l)
+    echo "$SWAP,$STRESS,$REPEAT,$RPS,$SLOWDOWN" >> "$OUTFILE"
+done < <(find "$RUNS_DIR" -type f -name "ab.txt" | sort)
 
 echo "Slowdown summary saved to $OUTFILE"

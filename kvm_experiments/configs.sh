@@ -20,15 +20,11 @@ AB_CONCURRENCY=30
 RUN_TIME=30
 TIMEOUT=600
 AB_KEEP_ALIVE=1
+TARGET_URL="http://127.0.0.1:8080/"
 
 # Reproducibility settings
 REPEAT_COUNT=3
 RESULTS_DIR_NAME="results"
-IMAGE="memory-pressure-app"
-
-# Container memory limits
-SERVICE_MEM="2g"
-SERVICE_SWAP="2g"
 
 # Host tuning knobs
 TCP_FIN_TIMEOUT=10

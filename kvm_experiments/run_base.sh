@@ -10,12 +10,6 @@ OUTDIR="${2:-$SCRIPT_DIR/$RESULTS_DIR_NAME/baseline}"
 
 mkdir -p "$OUTDIR"
 
-C1="service"
-
-echo "=========================================="
-echo "Running BASELINE: swappiness=$SWAP (single global baseline)"
-echo "=========================================="
-
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "ERROR: missing required command '$1'" >&2
@@ -23,11 +17,13 @@ require_cmd() {
   fi
 }
 
-require_cmd docker
+require_cmd python3
+require_cmd ab
 require_cmd curl
+require_cmd sysctl
 
-if ! docker version >/dev/null 2>&1; then
-  echo "ERROR: Docker CLI cannot reach a Docker daemon." >&2
+if [[ ! -f "$REPO_ROOT/workloads/latency_server.py" ]]; then
+  echo "ERROR: workload server missing at $REPO_ROOT/workloads/latency_server.py" >&2
   exit 1
 fi
 
@@ -44,9 +40,13 @@ try_sysctl() {
   fi
 }
 
+echo "=========================================="
+echo "Running KVM BASELINE: swappiness=$SWAP"
+echo "=========================================="
+
 try_sysctl "vm.swappiness=$SWAP"
 
-echo "[*] Tuning host network..."
+echo "[*] Tuning guest network..."
 try_sysctl "net.core.somaxconn=65535"
 try_sysctl "net.ipv4.tcp_max_syn_backlog=65535"
 try_sysctl "net.ipv4.tcp_syncookies=1"
@@ -58,32 +58,25 @@ try_sysctl "net.ipv4.tcp_max_orphans=$TCP_MAX_ORPHANS"
 cat /proc/vmstat > "$OUTDIR/vmstat_before.txt"
 cat /proc/meminfo > "$OUTDIR/meminfo_before.txt"
 
-docker rm -f "$C1" 2>/dev/null || true
+SERVER_LOG="$OUTDIR/server.log"
+python3 "$REPO_ROOT/workloads/latency_server.py" > "$SERVER_LOG" 2>&1 &
+SERVER_PID=$!
 
-if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "Docker image '$IMAGE' not found locally; attempting to build..."
-  if ! docker build -t "$IMAGE" -f "$REPO_ROOT/docker/Dockerfile" "$REPO_ROOT"; then
-    echo "ERROR: failed to build image '$IMAGE'" >&2
-    exit 1
-  fi
-fi
-
-docker run -d \
-  --name "$C1" \
-  --memory="$SERVICE_MEM" \
-  --memory-swap="$SERVICE_SWAP" \
-  --network host \
-  "$IMAGE"
+cleanup() {
+  kill "$SERVER_PID" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 echo "[*] Waiting for service to be ready..."
-timeout=30; elapsed=0
+timeout=30
+elapsed=0
 while [ $elapsed -lt $timeout ]; do
-  if docker exec "$C1" curl -sS --fail -o /dev/null http://127.0.0.1:8080/ >/dev/null 2>&1; then
-    echo "Service is responding inside container on :8080"
+  if curl -sS --fail -o /dev/null "$TARGET_URL" >/dev/null 2>&1; then
+    echo "Service is responding on $TARGET_URL"
     break
   fi
   sleep 1
-  elapsed=$((elapsed+1))
+  elapsed=$((elapsed + 1))
 done
 if [ $elapsed -ge $timeout ]; then
   echo "WARNING: service did not respond after ${timeout}s; continuing anyway"
@@ -110,20 +103,15 @@ RUN_TS="$(date -Iseconds)"
   echo "ab_requests=$AB_REQUESTS"
   echo "ab_runtime_seconds=$RUN_TIME"
   echo "ab_timeout_seconds=$TIMEOUT"
-  echo "image=$IMAGE"
+  echo "target_url=$TARGET_URL"
   echo "kernel=$(uname -r)"
   echo "swappiness_effective=$(cat /proc/sys/vm/swappiness 2>/dev/null || echo unknown)"
-  echo "service_mem=$SERVICE_MEM"
-  echo "service_swap=$SERVICE_SWAP"
 } > "$OUTDIR/manifest.txt"
 
-docker run --rm --network host jordi/ab "${AB_ARGS[@]}" \
-  http://127.0.0.1:8080/ > "$OUTDIR/ab.txt"
+ab "${AB_ARGS[@]}" "$TARGET_URL" > "$OUTDIR/ab.txt"
 
 cat /proc/vmstat > "$OUTDIR/vmstat_after.txt"
 cat /proc/meminfo > "$OUTDIR/meminfo_after.txt"
 sudo dmesg | grep -i oom > "$OUTDIR/oom.txt" || true
-
-docker rm -f "$C1"
 
 echo "Baseline run completed for swappiness=$SWAP"

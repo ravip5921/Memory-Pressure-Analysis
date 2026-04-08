@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 
@@ -11,7 +10,7 @@ BASELINE_DIR = BASE / "baseline"
 
 RAW_OUT = SCRIPT_DIR / "summary_runs_raw.csv"
 AGG_OUT = SCRIPT_DIR / "summary_aggregated.csv"
-LEGACY_OUT = SCRIPT_DIR / "corr_rt_30_timeout_600_with_slowdown_global_baseline_linux.csv"
+LEGACY_OUT = SCRIPT_DIR / "corr_rt_30_timeout_600_with_slowdown_global_baseline_linux_kvm.csv"
 
 
 def parse_manifest(path: Path) -> dict:
@@ -86,6 +85,7 @@ rows.append(
         "baseline_swappiness": baseline_manifest.get("baseline_swappiness", "unknown"),
         "ab_concurrency": baseline_manifest.get("ab_concurrency", "unknown"),
         "run_timestamp": baseline_manifest.get("run_timestamp", "unknown"),
+        "platform": "kvm",
     }
 )
 
@@ -129,6 +129,7 @@ for child in sorted(BASE.iterdir()):
                 baseline_manifest.get("ab_concurrency", "unknown"),
             ),
             "run_timestamp": manifest.get("run_timestamp", "unknown"),
+            "platform": "kvm",
         }
     )
 
@@ -157,6 +158,7 @@ agg_df = (
 
 for key in ["baseline_mode", "baseline_swappiness", "ab_concurrency"]:
     agg_df[key] = baseline_manifest.get(key, "unknown")
+agg_df["platform"] = "kvm"
 
 agg_df.to_csv(AGG_OUT, index=False)
 agg_df.to_csv(LEGACY_OUT, index=False)
