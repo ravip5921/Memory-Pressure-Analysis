@@ -38,6 +38,18 @@ This directory contains a VM-native version of the memory-pressure experiments.
 bash kvm_experiments/run_matrix_base.sh
 ```
 
+## Resume interrupted runs (skip completed ones)
+```bash
+bash kvm_experiments/run_matrix.sh
+```
+
+The script checks each run directory for complete artifact sets (ab.txt, vmstat_before/after, meminfo_before/after, oom.txt, manifest.txt) and skips those already done. Useful when socket reset errors or timeouts interrupt a matrix run.
+
+## List missing/incomplete runs without executing
+```bash
+bash kvm_experiments/run_matrix.sh --list-missing
+```
+
 ## Notes
 - Use a non-root user; scripts call `sudo` only where required for sysctl/dmesg.
 - Results are written to `kvm_experiments/results`.
