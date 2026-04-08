@@ -1,7 +1,9 @@
-run_type=baseline
-run_timestamp=2026-04-08T21:42:14+00:00
-baseline_mode=single_global
-baseline_swappiness=60
+run_type=stressed
+run_timestamp=2026-04-08T21:44:34+00:00
+repeat_index=2
+swappiness=60
+stress_level=extreme
+stress_bytes=1200m
 ab_concurrency=30
 ab_requests=2000
 ab_runtime_seconds=30
