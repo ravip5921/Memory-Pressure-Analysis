@@ -29,7 +29,6 @@ The Docker and KVM runs collect application output together with kernel-level sn
 - [experiments/](experiments/): Docker experiment scripts, summary CSVs, plots, and report source
 - [kvm_experiments/](kvm_experiments/): KVM experiment scripts, preflight checks, summary CSVs, and plots
 - [workloads/](workloads/): the latency-sensitive service used during experiments
-- [experiments/results/](experiments/results/): archived Docker run artifacts
 - [notes/](notes/): experiment notes and observations
 
 ## Requirements
