@@ -10,8 +10,9 @@
 \usepackage{url}
 \usepackage{hyperref}
 \usepackage{xurl}
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+  T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
 \title{Analyzing the Effects of Memory Pressure on Container and Virtual Machine Performance\\
@@ -36,12 +37,12 @@ carsoncahoy@unomaha.edu}
 \maketitle
 
 \begin{abstract}
-Virtualization is one of the most important technologies used in cloud computing as containers and virtual machines (VMs) allow workload distribution across physical hardware in multiple ways. Containers provide lightweight isolation by sharing the host kernel, and this potentially exposes applications to performance degradation under memory pressure. On the other hand, VMs provide stronger isolation but it is at the cost of additional memory overhead. This project aims to investigate the effects of memory pressure on Docker containers and Kernel-based VMs (KVMs) by focusing on throughput, tail latency, and fairness under controlled memory, swap, and I/O stress scenarios. By analyzing observed performance changes with Linux kernel memory management mechanisms, including cgroup limits, page reclaim policies, and Out-Of-Memory (OOM) behavior, the study will provide mechanism-level insights into resource isolation, multi-workload interference, and performance predictability. The results should be able to inform best practices for deploying workloads in memory-constrained virtualized and containerized environments.
+Virtualization is one of the most important technologies used in cloud computing as containers and virtual machines (VMs) allow workload distribution across physical hardware in multiple ways. Containers provide lightweight isolation by sharing the host kernel, which can expose applications to performance degradation under memory pressure. On the other hand, VMs provide stronger isolation but it is at the cost of additional memory overhead. This project aims to investigate the effects of memory pressure on Docker containers and Kernel-based VMs (KVMs) by focusing on throughput, tail latency, and performance degradation under controlled memory, swap, and stress scenarios. By analyzing observed performance changes with Linux kernel memory management mechanisms, including cgroup limits, page reclaim policies, and Out-Of-Memory (OOM) behavior, the study will provide mechanism-level insights into resource isolation, multi-workload interference, and performance predictability. The results can inform best practices for deploying workloads in memory-constrained virtualized and containerized environments.
  
 \end{abstract}
 
 \begin{IEEEkeywords}
-containerization, virtual machine, memory pressure , resource isolation
+containerization, virtual machine, memory pressure, resource isolation
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -50,26 +51,26 @@ Virtualization is a core operating system concept which enables multiple isolate
 
 In this work, \textit{memory pressure} refers to conditions in which memory demand approaches or exceeds available physical memory, triggering reclaim or swapping. Linux control groups (cgroups) enforce per-container memory limits and track usage, enabling controlled reclamation and out-of-memory handling when limits are exceeded \cite{linux_cgroup_memory_controller}. \textit{Swapping} and \textit{page reclaim} refer to kernel mechanisms that evict memory pages to disk or free inactive pages to satisfy allocation requests. \textit{Tail latency} denotes high-percentile response times that capture worst-case delays and are critical for service-level objectives \cite{dean2013tail}. \textit{Resource fairness} describes proportional and predictable allocation of memory resources among competing workloads. In virtualized systems, memory reclamation may introduce \textit{double paging}, where both guest and hypervisor independently reclaim memory, increasing overhead and performance degradation \cite{WaldspurgerProceedingsOT}.
 
-Memory pressure has become a critical systems challenge in virtualized environments due to increasing workload density and memory overcommitment practices. Overcommitment allows providers to increase utilization but may trigger reclaim activity, swapping, and thrashing when aggregate working sets exceed physical memory capacity \cite{nakazawa2017taming}. Under such conditions, performance becomes unpredictable as applications compete for limited memory resources, which leads to resource contention and degraded throughput. Prior work demonstrates that containerized workloads show significant performance loss and QoS violations under extreme memory pressure, particularly when Linux reclaim policies aggressively swap active pages \cite{nakazawa2017taming}. Moreover, modern services are highly latency-sensitive, which makes tail latency a critical performance metric, since even a small increases in memory stall times can lead to  significant degradation in quality of service and user experience \cite{dean2013tail}. 
+Memory pressure has become a critical systems challenge in virtualized environments due to increasing workload density and memory overcommitment practices. Overcommitment allows providers to increase utilization but may trigger reclaim activity, swapping, and thrashing when aggregate working sets exceed physical memory capacity \cite{nakazawa2017taming}. Under such conditions, performance becomes unpredictable as applications compete for limited memory resources, which leads to resource contention and degraded throughput. Prior work demonstrates that containerized workloads show significant performance loss and QoS violations under extreme memory pressure, particularly when Linux reclaim policies aggressively swap active pages \cite{nakazawa2017taming}. Moreover, modern services are highly latency-sensitive, which makes tail latency a critical performance metric, since even a small increases in memory stall times can lead to significant degradation in quality of service and user experience \cite{dean2013tail}. 
 
-A central tension exists between containers and virtual machines in how they handle resource isolation under memory stress. Containers provide lightweight isolation and high efficiency by sharing the host kernel, but this shared kernel architecture can expose workloads to interference under contention. Virtual machines provide stronger isolation by virtualizing hardware resources, yet this isolation introduces additional memory overhead and complex reclamation interactions between guest and host memory managers. These differences raise important questions about performance degradation patterns, predictability, and fairness when memory becomes scarce.
+A central tension exists between containers and virtual machines in how they handle resource isolation under memory stress. Containers provide lightweight isolation and high efficiency by sharing the host kernel, but this shared kernel architecture can expose workloads to interference under contention. Virtual machines provide stronger isolation by virtualizing hardware resources, yet this isolation introduces additional memory overhead and complex reclamation interactions between guest and host memory managers. These differences raise important questions about performance degradation patterns and predictability when memory becomes scarce.
 
-There are several key challenges that motivate this work. Memory pressure can lead to performance degradation through page reclaim, swapping, and cache eviction, increasing latency and reducing throughput. It becomes difficult to ensure fairness and resource isolation  when multiple workloads compete for memory, especially in multi-tenant environments. Swap behavior and page reclaim policies may introduce significant overhead and I/O amplification. Additionally, multi-workload interference can cause noisy-neighbor effects, undermining performance guarantees even when resource limits are configured.
+There are several key challenges that motivate this work. Memory pressure can lead to performance degradation through page reclaim, swapping, and cache eviction, increasing latency and reducing throughput. It becomes difficult to ensure fairness and resource isolation when multiple workloads compete for memory, especially in multi-tenant environments. Swap behavior and page reclaim policies may introduce significant overhead and I/O amplification. Additionally, multi-workload interference can cause noisy-neighbor effects, undermining performance guarantees even when resource limits are configured.
 
-This project investigates the following research question: \textit{How does memory pressure influence performance, isolation, and fairness in container-based versus virtualized environments?}
+This project investigates the following research question: \textit{How does memory pressure influence performance and isolation in container-based versus virtualized environments?}
 
-This project aims to provide a systematic evaluation of memory pressure effects in Docker containers and KVM virtual machines through controlled stress scenarios. Prior comparisons of containers and VMs have focused primarily on baseline performance and overhead \cite{felter2015comparison}. More recent work on container run-times highlights limitations in performance isolation under concurrent memory stress \cite{bhaia2024isolation}. Building on these findings, this study analyzes performance degradation and tail latency under memory stress, evaluates fairness under multi-workload contention, and performs a mechanism-level analysis of Linux memory management behavior, including cgroup enforcement, reclaim activity, swapping, and OOM handling. By linking observed performance behavior to underlying kernel mechanisms, the project seeks to provide actionable insights for deploying workloads in memory-constrained and multi-tenant environments.
+This project aims to provide a systematic evaluation of memory pressure effects in Docker containers and KVM virtual machines through controlled stress scenarios. Prior comparisons of containers and VMs have focused primarily on baseline performance and overhead \cite{felter2015comparison}. More recent work on container run-times highlights limitations in performance isolation under concurrent memory stress \cite{bhaia2024isolation}. Building on these findings, this study analyzes performance degradation and tail latency under memory stress, and performs a mechanism-level analysis of Linux memory management behavior, including cgroup enforcement, reclaim activity, swapping, and OOM handling. By linking observed performance behavior to underlying kernel mechanisms, the project seeks to provide actionable insights for deploying workloads in memory-constrained and multi-tenant environments.
 
 
 
 
 \section{Background and Related Work}
 %----------------------------------------------
-Memory management under contention is a key challenge in virtualized and containerized systems, especially with the growing workload density in cloud systems that rely on memory overcommitting to achieve better resource utilization. The traditional operating systems literature defines memory management as a trade-off between efficiency, isolation, and fairness, where memory allocation policies have to avoid interference while sustaining high utilization \cite{silberschatz2018operating}. This trade-off becomes difficult to achieve in multi-tenant scenarios where the aggregate workloads approach physical memory size.
+Memory management under contention is a key challenge in virtualized and containerized systems, especially with the growing workload density in cloud systems that rely on memory overcommitting to achieve better resource utilization. The traditional operating systems literature defines memory management as a trade-off between efficiency and isolation, where memory allocation policies have to avoid interference while sustaining high utilization \cite{silberschatz2018operating}. This trade-off becomes difficult to achieve in multi-tenant scenarios where the aggregate workloads approach physical memory size.
 
 Some early studies have established baseline performance characteristics of virtualization technologies. Felter et al. \cite{felter2015comparison} demonstrated that both Docker containers and KVM virtual machines achieve near-native CPU and memory performance, with some overhead arising from I/O subsystems and configuration choices. Because performance differences are small under normal conditions, later research has focused on behavior under contention and stress, where isolation guarantees and resource management policies become critical.
 
-Recent studies show that performance isolation is still a challenge in containerized environments. Bhaia et al. \cite{bhaia2024isolation} evaluated multiple container run-times and found that concurrent memory-intensive workloads can lead to significant throughput degradation despite configured isolation mechanisms. Their results highlight trade-offs between efficiency and stronger sand-boxing approaches which indicates that runtime design and kernel sharing influence interference patterns under contention.
+Recent studies show that performance isolation is still a challenge in containerized environments. Bhaia et al. \cite{bhaia2024isolation} evaluated multiple container run-times and found that concurrent memory-intensive workloads can lead to significant throughput degradation despite configured isolation mechanisms. Their results highlight trade-offs between efficiency and stronger sand-boxing approaches indicating that runtime design and kernel sharing influence interference patterns under contention.
 
 A key factor driving interference is memory pressure, which triggers page reclaim and swapping. Under severe overcommitment, Linux reclaim policies may evict active pages and induce thrashing, causing disproportionate degradation among heavily utilized containers \cite{nakazawa2017taming}. This work demonstrates that reclaim policy parameters, such as swappiness, strongly influence performance isolation and that degradation thresholds are difficult to predict in highly overcommitted systems.
 
@@ -85,25 +86,25 @@ Latency sensitivity further amplifies the importance of understanding memory pre
 
 Despite extensive research on virtualization overhead, container isolation, and memory overcommitment, important gaps remain. Existing studies often examine containers or virtual machines independently, focus on extreme overcommitment scenarios, or emphasize throughput rather than fairness and predictability. A systematic, mechanism-aware comparison of containers and virtual machines under controlled memory pressure, linking performance degradation, tail latency, and fairness to underlying memory management behavior, remains limited.
 
-This work aims to address these gaps by combining controlled stress scenarios, multi-workload contention experiments, and analysis of kernel and hypervisor memory management mechanisms. By examining reclaim activity, swapping behavior, cgroup enforcement, and VM ballooning interactions, one of the study goals is to characterize degradation patterns, isolation properties, and fairness behavior in memory-constrained environments.
+This work aims to address these gaps by combining controlled stress scenarios, multi-workload contention experiments, and analysis of kernel and hypervisor memory management mechanisms. By examining reclaim activity, swapping behavior, cgroup enforcement, and VM ballooning interactions, one of the study goals is to characterize degradation patterns and isolation properties in memory-constrained environments.
 
 \section{Problem Definition}
+To address these gaps, we define a controlled experimental model that enables systematic comparison of container-based and virtualized environments under memory pressure. This section of the paper defines the system model, memory pressure scenarios, performance, and metrics evaluated in this study.
 
-This section of the paper defines the system model, memory pressure scenarios, performance, metrics as well as fairness criteria evaluated in this study.
+We consider a single physical host equipped with fixed CPU, memory, and storage resources. On this host, workloads will be deployed using a container-based virtualization using Docker or hardware virtualization using Kernel-based Virtual Machines (KVMs). The objective of the project is to analyze and compare the results on how the two approaches respond to memory pressure under controlled and reproducible conditions.
 
-We consider a single physical host equipped with fixed CPU, memory, and storage resources. On this host, workloads will be deployed using a container based virtualization through docker or hardware virtualization using Kernel-based Virtual Machines(KVMs). The objective of the project is to analyze and compare the results on how the two approaches respond to memory pressure under controlled and reproducible conditions.
+In the container-based configuration, multiple containers share the host Linux kernel. Memory usage will be controlled by the use of Linux control groups (\textit{cgroups}), which enforce per container limits and trigger page reclaim, swapping, or OOM handling when limits are surpassed. Because containers share the same kernel and page cache, memory contention may result in interference between the workloads. 
 
-In the container based configuration, multiple containers share the host Linux kernel. Memory usage will be controlled by the use of Linux control groups (\textit{cgroups}), which enforce per container limits and trigger page reclaim, swapping, or OOM handling when limits are surpassed. Because containers share the same kernel and page cache, memory contention may result in interference between the workloads. 
+In the virtual memory configuration, each KVM instance will run as its own guest operating system with a fixed memory allocation. Memory reclamation may occur at the hypervisor level or even at the guest level. This layered memory management can introduce additional overhead such as double paging, where both guest and host reclaim memory separately. VMs therefore provide stronger isolation but may result in higher reclamation cost under pressure.
 
-In the virtual memory configuration, each KVM instance will run as its own guest operating system with a fixed memory allocation. Memory reclamation may occur at the hypervisor level or even at the guest level. This layered memory management can introduce additional overhead such as, double paging, where both guest and host reclaim memory separately. VM's therefore provide stronger isolation but may result in higher reclamation cost under pressure.
+Memory pressure can be defined as the condition in which total memory demand approaches or exceeds available physical memory. In the container-based experiments, memory pressure is defined relative to the cgroup memory limits imposed on each container. In contrast, for the KVM experiments, memory pressure is defined relative to the fixed memory allocation of the guest virtual machine. This ensures that pressure is evaluated within the relevant isolation boundary in each environment rather than at the host level, enabling a consistent comparison of container-level and VM-level memory behavior.
 
-Memory pressure can be defined as the condition in which total memory demand approaches or exceeds available physical memory. 
 To enable systematic evaluation, we define three pressure regimes:
 
 \begin{itemize}
 \item \textbf{Moderate pressure:} aggregate memory usage approaches system capacity, triggering limited reclaim.
 \item \textbf{High pressure:} demand exceeds available memory, causing aggressive reclaim and potential swap activity.
-\item \textbf{Extreme pressure:} severe overcommitment leads to frequent major page faults, sustained swap I/O, and potential OOM events.
+\item \textbf{Extreme pressure:} severe overcommitment leads to frequent reclaim activity, increased latency, and potential OOM events.
 \end{itemize}
 These three regimes allow for systematic evaluation of performance degradation, system stability and isolation behavior.
 
@@ -112,34 +113,47 @@ We will evaluate system behavior using the following criteria:
 \begin{itemize}
 \item \textbf{Throughput:} amount of useful work done per unit time.
 \item \textbf{Tail latency:} high-percentile response times capturing worst-case delays.
-\item  \textbf{Fairness:} proportional and predictable resource allocation among competing workloads.
+\item \textbf{Performance degradation:} relative loss of throughput under contention compared to baseline.
 \item \textbf{System stability indicators:} swap activity, major page faults, and OOM events.
 \end{itemize}
 
 \section{Methodology}
+\subsection{Experimental Environment}
+All experiments in this project are performed on a single Linux host machine running Ubuntu 22.04, which serves as both the Docker execution platform and the hypervisor for KVM experiments. The host system is equipped with 64\,GB of RAM and an Intel Core i7-7700T CPU.
+
+
+Two environments are evaluated in this study. The container-based environment runs directly on the Linux host, while the virtual machine environment runs the same service and stress workload inside a KVM guest. Both environments use the same workload definitions, enabling direct comparison.
 
 \subsection{Experimental Design}
-This study uses a controlled benchmarking methodology to evaluate how memory pressure affects performance, isolation, and fairness in both Docker containers and KVM guest environments. The two experiment tracks share the same workload structure, parameter sweep, and measurement strategy so that the results are directly comparable. In both cases, the study uses a single global baseline, fixed \texttt{ApacheBench (ab)} \cite{apachebench} concurrency, and the same set of memory-pressure levels.
+This study uses a controlled benchmarking methodology to evaluate how memory pressure affects performance and isolation in both Docker containers and KVM guest environments. Both experiment tracks use the same workload structure and parameter sweep. In both cases, the study uses a single global baseline, fixed \texttt{ApacheBench (ab)} \cite{apachebench} concurrency, and the same set of memory-pressure levels.
 
-For the Docker \cite{merkel2014docker} campaign, we run a service container and a stressor container on the same Linux host. The service is exposed on \texttt{127.0.0.1:8080}, the stressor is generated with \textit{stress-ng}, and ApacheBench is used to measure throughput and latency under swappiness values 10, 60, and 100 and stress levels moderate, high, and extreme. The Docker runs use one baseline configuration at swappiness 60, followed by the stressed matrix with three repeats per configuration. 
+For the Docker \cite{merkel2014docker} campaign, we run a service container and a stressor container on the same Linux host. The service is exposed on \texttt{127.0.0.1:8080}, “the stressor generates memory pressure, and ApacheBench is used to measure throughput and latency under swappiness values 10, 60, and 100 and stress levels moderate, high, and extreme. The Docker runs use one baseline configuration at swappiness 60, followed by the stressed matrix with three repeats per configuration. 
 
 % The run order, output naming, and repeat handling are controlled by the scripts in \texttt{experiments/configs.sh}, \texttt{experiments/run\_base.sh}, \texttt{experiments/run\_one.sh}, and \texttt{experiments/run\_matrix.sh}.
 
-For the KVM \cite{kivity2007kvm} campaign, we follow the same matrix structure inside a Linux virtual machine. The guest runs a lightweight HTTP service, a memory stressor generated with \textit{stress-ng}, and ApacheBench against \texttt{http://127.0.0.1:8080/}. Baseline and stressed runs are executed with the same swappiness values, stress levels, and fixed ApacheBench concurrency as the Docker experiments, but the workload executes inside the guest OS rather than inside containers. 
+For the KVM \cite{kivity2007kvm} campaign, we follow the same matrix structure inside a Linux virtual machine. The guest runs a lightweight HTTP service, a memory stressor generated with \textit{stress-ng}, and ApacheBench against \texttt{http://127.0.0.1:8080/}. 
 % The guest runbook in \texttt{kvm\_experiments/KVM\_SETUP\_LINUX.md} documents the VM creation and validation steps used for this setup.
 
-The common goal across both tracks is to compare how memory pressure changes throughput, tail latency, fairness, and system stability when the workload is isolated by container boundaries versus virtual machine boundaries. The scripts record application metrics together with kernel-level snapshots so that observed slowdowns can be tied to reclaim, swapping, and out-of-memory behavior \cite{linux_oom} \cite{linux_vm_sysctl}.
+The goal is to compare how memory pressure affects throughput, latency, and system stability under different isolation mechanisms. The scripts record application metrics together with kernel-level snapshots so that observed slowdowns can be tied to reclaim, swapping, and out-of-memory behavior \cite{linux_oom} \cite{linux_vm_sysctl}.
 
-The study follows a reproducible benchmarking approach, where each experiment is defined by a fixed configuration of memory limits, memory pressure level, and kernel parameters. Automated scripts execute the full experimental matrix and collect system-level metrics for analysis.
+Experiments are defined by fixed configurations of memory limits, pressure levels, and kernel parameters. Automated scripts execute the full experimental matrix and collect system-level metrics.
 
-\subsection{Experimental Environment}
+\subsection{System Architecture Overview}
 
-All experiments in this project are performed on the same Linux host machine, which serves as the Docker execution platform and also hosts the KVM guest used in the virtualized experiments. \texttt{PLACEHOLDER: LIST SPECS}
+To clarify the experimental setup and workload interactions, Figure ~\ref{fig:architecture} illustrates the system architecture for both the container-based and virtual machine-based environments.
 
-Two environments are evaluated in this study. The container-based environment runs directly on the Linux host, while the virtual machine environment runs the same service and stress workload inside a KVM guest. Both environments use the same workload definitions, but their isolation boundaries differ: Docker shares the host kernel, while KVM isolates the service inside a guest operating system.
+In the Docker-based setup, the ApacheBench (AB) client sends HTTP requests to a latency-sensitive service running inside a container. A separate container runs a memory-intensive stress workload using \textit{stress-ng}. Both containers share the host Linux kernel and compete for memory resources through cgroup-enforced limits \cite{linux_cgroup_memory_controller}.
+
+In the KVM-based setup, the ApacheBench client sends requests to a service running inside a virtual machine. Within the VM, both the service and the stress workload execute under the guest operating system. Memory pressure is therefore handled within the VM boundary, and the host kernel does not directly mediate contention between the service and stressor. This provides stronger isolation compared to containers but limits direct resource sharing.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{images/setup__.png}
+\caption{System architecture for Docker (top) and KVM (bottom) experimental setups.}
+\label{fig:architecture}
+\end{figure}
 
 \subsubsection{Container Environment}
-In the container-based configuration, workloads are deployed using Docker containers on the host Linux system \cite{merkel2014docker}. The service runs in one container and the memory stressor runs in another container on the same host. Containers share the host kernel and rely on Linux control groups (\textit{cgroups}) \cite{linux_cgroup_memory_controller} to enforce resource isolation. Memory limits are configured using Docker runtime flags:
+In the container-based configuration, workloads are deployed using Docker containers on the host Linux system \cite{merkel2014docker}. The service runs in one container and the memory stressor runs in another container on the same host. Containers use \textit{cgroups} \cite{linux_cgroup_memory_controller} to enforce memory limits. Memory limits are configured using Docker runtime flags:
 
 \begin{itemize}
 \item \texttt{--memory} to restrict container memory usage
@@ -152,29 +166,25 @@ Each experimental run launches two containers:
 \item \textbf{C1}: latency-sensitive service container
 \item \textbf{C2}: memory stressor container
 \end{itemize}
-Because both containers share the host kernel and page cache, this configuration allows the study of interference effects between competing workloads. The Docker scripts also record pre- and post-run \texttt{/proc/vmstat}, \texttt{/proc/meminfo}, and kernel OOM traces for each run.
+This configuration allows the study of interference effects between competing workloads. The Docker scripts also record pre- and post-run \texttt{/proc/vmstat}, \texttt{/proc/meminfo}, and kernel OOM traces for each run.
 
 \subsubsection{Virtual Machine Environment}
-In the virtualized configuration, workloads are deployed in KVM virtual machines managed through QEMU \cite{bellard2005qemu}. Each VM runs an independent guest operating system with a fixed memory allocation.
 
-Two VMs are created for each experiment:
+In the virtualized configuration, workloads are deployed inside a single KVM virtual machine managed through QEMU \cite{bellard2005qemu}. The guest runs an independent operating system with a fixed memory allocation.
 
-\begin{itemize}
-\item \textbf{VM1}: latency-sensitive service
-\item \textbf{VM2}: memory stressor
-\end{itemize}
-
-This setup introduces stronger isolation boundaries, but also additional overhead due to virtualization and guest-level memory management. The VM-based experiments are currently being implemented and will follow the same experimental configuration used in the container experiments.
-
-In VM environments, memory reclamation may occur at multiple layers:
+Within the VM, two workloads are executed:
 
 \begin{itemize}
-\item guest operating system memory reclaim
-\item hypervisor-level reclaim
-\item optional ballooning mechanisms
+\item \textbf{Service}: latency-sensitive HTTP service
+\item \textbf{Stressor}: memory-intensive workload generated using \textit{stress-ng}
 \end{itemize}
 
-These interactions may introduce additional overhead, including \textit{double paging}, where both the guest OS and the hypervisor independently reclaim memory.
+This configuration allows controlled evaluation of memory pressure within the VM environment.
+
+\subsection{VM Resource Configuration and Constraints}
+
+The KVM experiments were conducted using a guest virtual machine configured with 4\,GB of RAM and 2 vCPUs on a host system equipped with an Intel Core i7-7700T processor. 
+
 
 \subsection{Workload Composition}
 
@@ -209,14 +219,15 @@ Experiments are conducted under three levels of memory pressure:
 \begin{itemize}
 \item \textbf{Moderate pressure}: memory usage approaches available system memory and triggers limited reclaim.
 \item \textbf{High pressure}: memory demand exceeds available physical memory and triggers aggressive reclaim.
-\item \textbf{Extreme pressure}: severe overcommitment causes sustained memory reclaim activity and potential system instability.
+\item \textbf{Extreme pressure:} severe overcommitment leads to frequent reclaim activity, increased latency, and potential system instability.
 \end{itemize}
 
-The stress levels are implemented through configurable \texttt{stress-ng} parameters specifying memory allocation sizes and duration. In addition to memory demand, experiments vary the Linux kernel parameter \texttt{vm.swappiness}.
+The stress levels are implemented through configurable \texttt{stress-ng} parameters specifying memory allocation sizes and duration. Experiments also vary the Linux kernel parameter \texttt{vm.swappiness}.
 
 
 Swappiness controls the kernel’s preference for swapping out anonymous memory versus reclaiming page cache. Different swappiness values influence reclaim aggressiveness and can significantly affect performance under memory pressure \cite{nakazawa2017taming}. In this study, the matrix uses swappiness values 10, 60, and 100 with a single global baseline at swappiness 60.
 
+Memory pressure is defined relative to the available memory within each environment. This ensures comparable pressure conditions within each isolation boundary rather than at the host level.
 
 \subsection{Mixed Workload Interference}
 
@@ -230,7 +241,7 @@ This setup allows evaluation of scenarios such as:
 \item memory pressure leading to swap activity or OOM events
 \end{itemize}
 
-By comparing isolated baseline runs with colocated runs, the study quantifies how much interference arises from memory contention.
+By comparing isolated baseline runs with colocated runs, the study quantifies how much interference arises from memory contention \cite{mars2011bubble}.
 
 \subsection{Measurement and Instrumentation}
 
@@ -250,7 +261,7 @@ Tail latency is particularly important because memory reclaim and swapping can i
 
 \subsubsection{Kernel-Level Metrics}
 
-System-level metrics are collected from Linux \texttt{/proc} interfaces and kernel logs.
+System-level metrics are collected from Linux \texttt{/proc} interfaces and kernel logs \cite{linux_vm_sysctl}.
 
 Key metrics include:
 
@@ -263,11 +274,12 @@ Key metrics include:
 \item kernel logs (\texttt{dmesg}) for OOM events
 \end{itemize}
 
-These metrics allow identification of specific kernel mechanisms responsible for performance degradation.
+
+Although swap activity is monitored, preliminary observations indicate that most configurations do not exhibit sustained swap-in or swap-out activity. Therefore, performance degradation is expected to be driven primarily by memory reclaim and contention rather than heavy swapping.
 
 \subsubsection{OOM Behavior Monitoring}
 
-Out-of-memory events are captured using kernel logs. In container environments, OOM handling may occur at two levels:
+Out-of-memory events are captured using kernel log \cite{linux_oom}. In container environments, OOM handling may occur at two levels:
 
 \begin{itemize}
 \item \textbf{Cgroup-level OOM}, where the kernel kills a process within a container whose memory limit is exceeded.
@@ -276,13 +288,9 @@ Out-of-memory events are captured using kernel logs. In container environments, 
 
 Understanding which mechanism is triggered helps explain differences in isolation behavior between containers and VMs.
 
-\subsection{Fairness Metrics}
+\subsection{Performance Degradation Metrics}
 
-Fairness is evaluated using two quantitative metrics.
-
-\subsubsection{Proportional Slowdown}
-
-Proportional slowdown measures how much a workload’s performance degrades relative to its isolated baseline:
+Performance degradation is evaluated using proportional slowdown \cite{hennessy2017computer}, which measures how much a workload’s performance changes relative to its isolated baseline:
 
 \[
 slowdown_i = \frac{T_{baseline}}{T_{contended}}
@@ -290,23 +298,15 @@ slowdown_i = \frac{T_{baseline}}{T_{contended}}
 
 where $T_{baseline}$ is the standalone throughput and $T_{contended}$ is the throughput under contention.
 
-\subsubsection{Jain's Fairness Index}
-
-Fairness across workloads is measured using Jain's Fairness Index \cite{jain1998quantitative}:
-
-\[
-J(x) = \frac{(\sum x_i)^2}{n \sum x_i^2}
-\]
-
-where $x_i$ represents throughput or inverse slowdown for workload $i$, and $n$ is the number of workloads.
-
-A value close to 1 indicates equitable resource allocation, while lower values indicate unfairness.
+This metric captures the relative impact of memory pressure on application performance and allows comparison across different configurations and environments. In this study, proportional slowdown is used as the primary indicator of performance degradation under memory pressure.
 
 \subsection{Experimental Automation and Data Analysis}
 
-Experiments are fully automated using scripts that configure and execute workloads, iterate over stress levels and kernel parameters, and record results. Each Docker or KVM run generates a dedicated results directory containing benchmark output, kernel snapshots, and OOM logs. Multiple repetitions of each configuration are performed to account for variability, and results are aggregated to ensure reproducibility. The current scripts use three repetitions per stressed configuration.
+Experiments are fully automated using scripts that configure and execute workloads, iterate over stress levels and kernel parameters, and record results. Each Docker or KVM run generates a dedicated results directory containing benchmark output, kernel snapshots, and OOM logs. Multiple repetitions of each configuration are performed to account for variability, and results are aggregated. The current scripts use three repetitions per stressed configuration.
 
-Collected data is analyzed to relate memory pressure, kernel behavior, and application performance. Baseline throughput and latency are first established for the service running without interference, then performance under each stress configuration is compared. Proportional slowdown relative to baseline is computed, and kernel metrics (page reclaim, swap activity, major page faults, and OOM events) are examined to identify sources of degradation. Container and VM environments are compared to evaluate how isolation mechanisms influence performance under memory pressure. Visualization of throughput curves, latency distributions, fairness, and kernel metric trends aids in identifying patterns across the tested regimes.
+Collected data is analyzed to relate memory pressure, kernel behavior, and application performance. Proportional slowdown relative to baseline is computed, and kernel metrics (page reclaim, swap activity, major page faults, and OOM events) are examined to identify sources of degradation. Container and VM environments are compared to evaluate how isolation mechanisms influence performance under memory pressure.
+
+In some high-pressure configurations, transient failures such as socket connection resets were observed during benchmarking. These cases were rerun to obtain valid measurements. Such failures are treated as part of system behavior under extreme memory pressure rather than experimental errors.
 
 \subsection{Rationale for Methodological Choices}
 
@@ -315,13 +315,13 @@ The experimental methodology was chosen to provide a mechanism-aware evaluation 
 Several design choices support this goal:
 
 \begin{itemize}
-\item Controlled stress generation using \textit{stress-ng} allows systematic creation of memory pressure scenarios while maintaining repeatability.
+\item Controlled stress generation enables reproducible memory pressure scenarios.
 \item Latency-sensitive HTTP workloads allow measurement of tail latency effects that are often hidden in average performance metrics.
 \item Kernel-level instrumentation provides visibility into reclaim, swap, and OOM events that explain performance degradation.
 \item Parallel container and VM configurations enable direct comparison of isolation properties between lightweight and hardware virtualization.
 \end{itemize}
 
-These techniques enable the study to connect high-level application behavior with low-level kernel mechanisms, which addresses the research question of how memory pressure influences performance, isolation, and fairness.
+These techniques enable the study to connect high-level application behavior with low-level kernel mechanisms, which addresses the research question of how memory pressure influences performance and isolation.
 
 \subsection{External Tools and Platforms}
 
@@ -337,59 +337,209 @@ The following external tools are used in this study:
 These tools were selected because they are widely used in systems research and allow precise control over workload characteristics.
 \section{Results}
 
+This section presents experimental results for both Docker and KVM environments, focusing on throughput, tail latency, and performance degradation under varying memory pressure conditions. For most summary plots, markers indicate the mean across three runs, with error bars showing the standard deviation where available. Additionally, a distribution plot shows all individual runs to illustrate run-to-run variability.
+
 \subsection{Docker Experiments}
 
 The Docker campaign used a single global baseline at swappiness 60 and a fixed ApacheBench concurrency of 30 across all baseline and stressed runs. The completed dataset contains three repeats for each stressed configuration, and the summary files confirm that the experiment matrix executed as intended. The most relevant plots are shown in Figures~\ref{fig:docker-slowdown}, \ref{fig:docker-throughput}, \ref{fig:docker-tail}, and \ref{fig:docker-heatmap}.
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{plots/slowdown_vs_swappiness.png}
-    \caption{Mean slowdown versus swappiness for each stress level. Values above 1.0 indicate lower throughput than the baseline run.}
-    \label{fig:docker-slowdown}
+  \centering
+  \includegraphics[width=0.95\columnwidth]{plots/slowdown_vs_swappiness.png}
+  \caption{Mean slowdown versus swappiness for each stress level. Values above 1.0 indicate lower throughput than the baseline run.}
+  \label{fig:docker-slowdown}
 \end{figure}
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{plots/throughput_vs_swappiness.png}
-    \caption{Requests per second versus swappiness. The horizontal line marks the single global baseline throughput.}
-    \label{fig:docker-throughput}
+  \centering
+  \includegraphics[width=0.95\columnwidth]{plots/throughput_vs_swappiness.png}
+  \caption{Requests per second versus swappiness. The horizontal line marks the single global baseline throughput.}
+  \label{fig:docker-throughput}
 \end{figure}
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{plots/tail_latency_vs_swappiness.png}
-    \caption{Tail latency trends for p95 and p99 response times across swappiness values.}
-    \label{fig:docker-tail}
+  \centering
+  \includegraphics[width=0.95\columnwidth]{plots/tail_latency_vs_swappiness.png}
+  \caption{Tail latency trends for p95 and p99 response times across swappiness values.}
+  \label{fig:docker-tail}
 \end{figure}
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.95\columnwidth]{plots/heatmaps_slowdown_p99.png}
-    \caption{Heatmaps of mean slowdown and mean p99 latency across the stress matrix.}
-    \label{fig:docker-heatmap}
+  \centering
+  \includegraphics[width=0.95\columnwidth]{plots/heatmaps_slowdown_p99.png}
+  \caption{Heatmaps of mean slowdown and mean p99 latency across the stress matrix.}
+  \label{fig:docker-heatmap}
 \end{figure}
 
-The baseline achieved about 1306 requests/sec with p95 around 6 ms and p99 around 8 ms. Under contention, throughput dropped in every stressed configuration, with mean slowdown values ranging from roughly 1.06x to 1.64x relative to baseline. The weakest slowdown appeared at swappiness 10 with extreme stress, while the strongest degradation appeared at swappiness 60 with extreme stress. In the throughput plot, this shows up as a consistent downward shift from the baseline line across all stress levels.
+The baseline achieved about 1306 requests/sec with p95 around 6 ms and p99 around 8 ms. Under contention, throughput generally decreased across stressed configurations, although some runs remained close to baseline due to run-to-run variability. The smallest slowdown was observed at swappiness 10 with extreme stress. The strongest degradation appeared at swappiness 60 with extreme stress. In the throughput plot, this appears as an overall reduction relative to the baseline, although the trend is not strictly monotonic across swappiness levels.
 
-Tail latency also increased under memory pressure. Across the stressed runs, p95 latency clustered around 9--10 ms and p99 latency around 11--14 ms, which is higher than the baseline tail latency. The tail-latency plot shows that the effect is not isolated to a single stress level; instead, memory contention elevates high-percentile response times across the matrix.
+Across the stressed runs, p95 latency clustered around 9--10 ms and p99 latency around 11--14 ms, which is higher than the baseline tail latency. The tail-latency plot shows that the effect is not isolated to a single stress level; instead, tail latency increased under memory pressure, with high-percentile response times elevated across the stress matrix.
 
-The raw-repeat distribution indicates that variability is not negligible. Some swappiness and stress combinations show larger spread in throughput and slowdown than others, which suggests that the system response is somewhat sensitive to run-to-run state such as cache warmth, reclaim timing, and container scheduling noise. A small number of runs also recorded request failures, which is consistent with transient instability under heavier contention.
+The distribution across repeats indicates non-negligible variability. Some swappiness and stress combinations show larger spread in throughput and slowdown than others, which suggests that the system response is somewhat sensitive to run-to-run state such as cache warmth, reclaim timing, and container scheduling noise. A small number of runs also recorded request failures, which is consistent with transient instability under heavier contention.
 
-Kernel counters were less dramatic than the application-level metrics. Most runs showed little or no swap-in and swap-out activity, so the observed slowdown is not dominated by large sustained swap traffic in the current dataset. Instead, the performance impact is more visible in throughput loss, tail-latency inflation, and occasional request failures.
+Kernel counters were less dramatic than the application-level metrics. Across all configurations, swap activity remained minimal, indicating that performance degradation was not driven by sustained disk-backed paging \cite{nakazawa2017taming}. Instead, the performance impact is more visible in throughput loss, tail-latency inflation, and occasional request failures.
+
+\subsection{KVM Experiments}
+
+The KVM campaign followed the same experimental matrix as the Docker setup, with a single global baseline at swappiness 60 and ApacheBench concurrency fixed at 30. Each stressed configuration was repeated three times, and results were aggregated for analysis. The most relevant plots are shown in Figures~\ref{fig:kvm-slowdown}, \ref{fig:kvm-throughput}, \ref{fig:kvm-tail}, and \ref{fig:kvm-heatmap}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{kvm_plots/kvm_slowdown_vs_swappiness.png}
+  \caption{Mean slowdown versus swappiness for KVM experiments.}
+  \label{fig:kvm-slowdown}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{kvm_plots/kvm_throughput_vs_swappiness.png}
+  \caption{Throughput (requests/sec) versus swappiness for KVM.}
+  \label{fig:kvm-throughput}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{kvm_plots/kvm_tail_latency_vs_swappiness.png}
+  \caption{Tail latency (p95 and p99) across swappiness values in KVM.}
+  \label{fig:kvm-tail}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{kvm_plots/kvm_heatmaps_slowdown_p99.png}
+  \caption{Heatmaps of slowdown and p99 latency across KVM stress configurations.}
+  \label{fig:kvm-heatmap}
+\end{figure}
+
+The baseline throughput for the KVM environment was approximately 1420 requests/sec with p95 latency around 5 ms and p99 latency around 6 ms. Compared to the Docker baseline, the VM baseline performance is similar in magnitude, which is consistent with prior studies showing near-native performance for virtual machines under non-contended conditions \cite{felter2015comparison}.
+
+Under memory pressure, the degradation patterns differ from the Docker results. Across all configurations, the mean slowdown ranges from approximately 0.89x to 1.26x relative to baseline. In several configurations, particularly at swappiness 60 and moderate-to-high stress, throughput slightly improves relative to the baseline, which results in slowdown values below 1.0. This effect is likely due to reduced interference or measurement noise rather than a true performance gain.
+
+The highest mean slowdown is observed at swappiness 100 under high stress ($\approx$ 1.26×), although this configuration also exhibits high variability, indicating unstable performance rather than consistently poor behavior.
+
+Tail latency remains relatively stable compared to the Docker results, with only modest variation across swappiness and stress levels. The p95 latency is generally between 4--5.3 ms, and p99 latency remains between 5--7.7 ms for most configurations. Compared to the Docker results, tail latency inflation is smaller and more consistent across stress levels.
+
+Kernel-level metrics show minimal swap activity and very low major page fault counts in most runs. The absence of significant swap-in and swap-out activity suggests that performance degradation is not dominated by sustained disk-backed paging in the observed configurations.
+
+As in the container experiments, varying swappiness did not result in sustained swap activity, suggesting that reclaim behavior dominates performance effects in the evaluated configurations.
+
+Variability across runs is present but lower than in the Docker experiments for most configurations, except for the swappiness 100 high-stress case. This suggests that the VM environment is more stable under moderate and high pressure. Instability appears primarily under aggressive reclaim configurations.
+
+An important observation is that configurations with swappiness 60 consistently show slowdown values below or close to 1.0 across stress levels, indicating that moderate reclaim aggressiveness may help maintain stable performance in the VM environment.
+
+\subsection{Fairness Analysis}
+
+Although Jain’s Fairness Index was initially considered as a metric, the analysis showed that it does not reveal significant differences across the tested configurations. For completeness, we report the results for the Docker experiments: the fairness index remains high, ranging from approximately 0.95 to 0.99 across swappiness and stress levels. This indicates that memory pressure does not create strong imbalance between the latency-sensitive service and the stress workload.
+
+We include these results to provide a complete view of the system behavior, but note that they do not materially affect the conclusions drawn from throughput, slowdown, or tail-latency metrics. The overall variation in fairness is minor, suggesting that performance degradation under memory pressure is largely uniform across competing workloads.
+
+\subsection{Failure and Re-run Observations}
+
+During the experimental campaign, a small number of runs experienced transient failures, primarily in the form of socket connection resets during ApacheBench execution. These failures occurred under higher memory pressure configurations and required rerunning those experiments to obtain valid measurements.
+
+These events are not treated as experimental errors but rather as indicators of system instability under stress. In particular, connection resets suggest that memory pressure may impact not only application performance but also network stack responsiveness and system-level reliability.
+
+Therefore, these observations are treated as part of normal system behavior under extreme memory pressure rather than as outliers.
 
 \section{Discussion}
 
 \subsection{Docker Experiments}
 
-The Docker results support the interpretation that memory pressure degrades application performance even when the service remains available. The clearest signal is the reduction in throughput and the increase in tail latency under all stressed configurations. That pattern is consistent with the service container competing with the stress container for memory and reclaim bandwidth, even though the host-level swap counters did not show large sustained activity in most runs.
+The Docker results support the interpretation that memory pressure degrades application performance even when the service remains available. The clearest signal is the reduction in throughput and the increase in tail latency under all stressed configurations. That pattern is consistent with the service container competing with the stress container for memory and reclaim bandwidth, even though the host-level swap counters did not show large sustained activity in most runs \cite{nakazawa2017taming}.
 
-From a systems perspective, the results suggest that contention in a shared-kernel environment shows up first as responsiveness loss rather than catastrophic failure. The service continues to run, but the higher-percentile response times increase and throughput becomes less stable. This is important for latency-sensitive workloads because tail latency is often more visible to users than average throughput.
+From a systems perspective, the results suggest that contention in a shared-kernel environment shows up first as responsiveness loss \cite{dean2013tail} rather than catastrophic failure. The service continues to run, but the higher-percentile response times increase and throughput becomes less stable. This is important for latency-sensitive workloads because tail latency is often more visible to users than average throughput \cite{dean2013tail}.
 
-The swappiness setting influenced the results, but not in a perfectly monotonic way. Some configurations at swappiness 60 performed worse than the lower or higher values, and the variance across repeats indicates that the system is near a regime where reclaim behavior is sensitive to runtime state. That makes it risky to make a simple claim that one swappiness value is always best for all pressure levels. A safer interpretation is that memory pressure and kernel reclaim policy interact in a non-linear way, and the best setting depends on the workload mix and stress intensity.
+The swappiness setting influenced the results, but not in a perfectly monotonic way. Some configurations at swappiness 60 performed worse than the lower or higher values, and the variance across repeats indicates that the system is near a regime where reclaim behavior is sensitive to runtime state \cite{mars2011bubble}. That makes it risky to make a simple claim that one swappiness value is always best for all pressure levels. A safer interpretation is that memory pressure and kernel reclaim policy interact in a non-linear way, and the best setting depends on the workload mix and stress intensity.
 
 The occasional request failure is also meaningful. Even a single failed request under extreme contention is evidence that the benchmark is not merely slower but occasionally unstable. For the report, this should be described as observed interference under heavy memory pressure, not as proof that the kernel or container runtime is fundamentally broken. It is a symptom of the stress conditions you created.
 
-Overall, these Docker results are consistent with the project goal: containers provide lightweight isolation, but shared-kernel memory contention still harms throughput, tail latency, and run-to-run stability. The current dataset is strong enough to support a Docker results section and to motivate the KVM comparison, but it should avoid overclaiming swap-heavy behavior unless you add more runs that show stronger vmstat activity.
+Overall, these Docker results are consistent with the project goal: containers provide lightweight isolation, but shared-kernel memory contention still harms throughput, tail latency, and run-to-run stability \cite{bhaia2024isolation}. The current dataset is strong enough to support a Docker results section and to motivate the KVM comparison, but it should avoid overclaiming swap-heavy behavior unless you add more runs that show stronger vmstat activity.
+
+\subsection{KVM Experiments}
+
+The KVM results show a different performance profile compared to the container-based experiments. The most important observation is that performance degradation under memory pressure is smaller and more stable in the VM environment.
+
+Throughput degradation is limited in most configurations, and several cases even show apparent improvement relative to baseline. These improvements should not be interpreted as actual performance gains, but rather as artifacts of measurement variability, scheduling effects, or transient differences in system state. The key takeaway is that performance remains close to baseline for a large portion of the stress matrix.
+
+Tail latency behavior further highlights the difference between the two environments. In contrast to the Docker results, where tail latency consistently increased under pressure, the KVM experiments show relatively stable p95 and p99 latency across all stress levels. This suggests that the VM environment is more effective at shielding latency-sensitive workloads from interference caused by competing memory-intensive tasks.
+
+From a systems perspective, this behavior can be explained by the stronger isolation boundary provided by virtualization \cite{felter2015comparison, WaldspurgerProceedingsOT}. Because each workload runs inside a separate guest operating system with dedicated memory allocation, contention is largely confined within the VM. The host kernel does not directly mediate memory competition between the service and the stress workload, which reduces cross-workload interference.
+
+Another important observation is the lack of significant swap activity and major page faults in the collected metrics. This indicates that the guest operating system manages memory pressure internally without triggering heavy disk-backed paging. As a result, the system avoids the large latency penalties typically associated with swapping \cite{dean2013tail}.
+
+However, the results also show that instability can still occur under certain configurations. The swappiness 100 high-stress case exhibits high variability in throughput and slowdown, indicating that aggressive reclaim policies can still introduce unpredictability. This suggests that while virtualization improves isolation, it does not eliminate the impact of poor memory management parameter choices.
+
+Overall, the KVM results support the interpretation that virtual machines provide stronger isolation under memory pressure, resulting in more stable throughput and tail latency compared to containers. The trade-off is that this stability comes from isolating workloads within fixed memory boundaries, which limits direct competition but may also restrict flexibility in memory utilization.
+
+These findings align with the broader expectation that containers prioritize efficiency and resource sharing, while virtual machines prioritize isolation and predictability. The combined results from Docker and KVM experiments highlight this fundamental trade-off and provide empirical evidence of how it manifests under controlled memory pressure conditions.
+
+\subsection{Comparative Analysis: Containers vs Virtual Machines}
+We now directly compare the behavior of container-based and virtualized environments under equivalent memory pressure conditions. A direct comparison of the Docker and KVM results reveals clear differences in how the two virtualization approaches respond to similar memory pressure conditions.
+
+The most significant difference lies in \textbf{performance degradation patterns}. In the Docker experiments, memory pressure consistently led to throughput reduction and increased tail latency across all stress levels. In contrast, the KVM experiments show much smaller degradation, with several configurations remaining close to baseline performance and exhibiting only mild slowdown.
+
+This difference can be attributed to differences in the \textbf{memory isolation model} \cite{linux_cgroup_memory_controller}. In Docker, containers share the host kernel and page cache, which means that memory reclaim decisions are made globally across all workloads. As a result, the latency-sensitive service directly competes with the stress workload for memory and reclaim bandwidth. This leads to interference effects such as increased tail latency and reduced throughput.
+
+In contrast, KVM provides \textbf{stronger isolation through separate guest operating systems}. Each VM operates within its own memory allocation, and memory pressure is largely handled internally by the guest OS \cite{kivity2007kvm , WaldspurgerProceedingsOT}. This prevents direct cross-workload interference at the host kernel level, which explains the more stable throughput and tail latency observed in the KVM results.
+
+Another key difference is observed in \textbf{tail latency sensitivity}. The Docker experiments show consistent inflation of p95 and p99 latency under memory pressure, indicating that reclaim activity introduces delays visible at the application level. In the KVM experiments, tail latency remains relatively stable across most configurations. This suggests that virtualization is more effective at shielding latency-sensitive workloads from memory contention effects.
+
+\textbf{Variability and predictability} also differ between the two environments. Docker results exhibit higher run-to-run variability, particularly under extreme stress, which indicates sensitivity to reclaim timing and shared-kernel state. KVM results are generally more stable, with lower variance except in the most aggressive configurations (e.g., swappiness 100 under high stress). This suggests that virtualization improves performance predictability under moderate pressure.
+
+Importantly, neither environment shows strong evidence of sustained swap-driven degradation in the current dataset. Kernel metrics confirm that swap activity remains minimal in both environments, indicating that reclaim dominates performance degradation rather than disk paging.
+
+A critical observation across both environments is the occurrence of \textbf{transient request failures}, including socket connection resets during some high-pressure runs. These failures required rerunning certain configurations to obtain complete datasets. While not frequent, these events are important because they indicate that memory pressure can push the system into unstable regimes where network-level errors occur. Rather than being treated as noise, these failures should be interpreted as evidence of system stress and degraded quality of service under extreme conditions.
+
+Overall, the comparative results highlight a fundamental trade-off:
+
+\begin{itemize}
+\item \textbf{Containers (Docker):} higher efficiency and flexibility, but increased susceptibility to interference under memory pressure due to shared kernel resources.
+\item \textbf{Virtual Machines (KVM):} stronger isolation and more stable performance under pressure, at the cost of fixed memory allocation and reduced resource sharing.
+\end{itemize}
+
+These findings demonstrate that the choice between containers and virtual machines should depend on workload characteristics. Latency-sensitive and performance-critical applications may benefit from the stronger isolation of VMs, while throughput-oriented or resource-efficient deployments may favor containers despite their higher sensitivity to memory contention.
+
+\section{Threats to Validity}
+
+Several factors may influence the interpretation of the results in this study.
+
+First, the experiments are conducted on a single hardware platform with a specific CPU and memory configuration. Results may vary on systems with different hardware characteristics, particularly under different memory capacities or storage performance.
+
+Second, the workload used in this study is a simplified HTTP service benchmark. While ApacheBench provides controlled and repeatable measurements, real-world applications may exhibit different memory access patterns and sensitivity to memory pressure.
+
+Third, the VM configuration uses a fixed memory allocation without explicitly enabling advanced hypervisor features such as ballooning. As a result, the observed behavior primarily reflects guest-level memory management rather than full host-guest interaction.
+
+Fourth, while multiple repetitions are used to reduce variability, some configurations exhibit run-to-run fluctuations. Factors such as cache state, scheduling effects, and background system activity may influence results.
+
+Finally, swap activity was minimal in the observed experiments, which limits conclusions about swap-heavy scenarios. Additional experiments with stronger overcommitment or different storage configurations may be required to fully characterize swap-driven behavior.
+
+Despite these limitations, the controlled experimental design and consistent trends across configurations provide confidence in the observed comparative behavior between containers and virtual machines under memory pressure.
+
+\section{Conclusion}
+
+This paper presented a systematic experimental study of how memory pressure affects performance and isolation in container-based and virtualized environments. Using controlled stress scenarios, we compared Docker containers and KVM virtual machines across multiple pressure regimes, focusing on throughput, tail latency, and performance degradation.
+
+The results demonstrate that memory pressure degrades performance in both environments, but the impact differs significantly due to their underlying isolation mechanisms.
+
+In container-based environments, memory pressure leads to higher throughput degradation, significant increases in tail latency, and greater run-to-run variability. These effects arise from shared-kernel resource contention, where workloads compete for memory and reclaim bandwidth. Even in the absence of heavy swap activity, reclaim behavior introduces latency spikes and performance instability.
+
+In contrast, virtual machine environments exhibit more stable throughput, minimal impact on tail latency, and stronger isolation under comparable pressure conditions. Because memory contention is largely confined within the guest operating system, interference between workloads is reduced. However, performance sensitivity to aggressive reclaim policies indicates that isolation does not fully eliminate the effects of memory pressure.
+
+A key finding across both environments is that performance degradation is primarily driven by memory reclaim rather than sustained swapping \cite{nakazawa2017taming}. Additionally, transient failures observed under extreme pressure suggest that memory contention can affect not only performance but also system stability.
+
+Overall, the study highlights a fundamental trade-off: containers prioritize efficiency and flexible resource sharing but are more susceptible to contention, while virtual machines provide stronger isolation and more predictable performance at the cost of reduced flexibility.
+
+\section{Future Work}
+
+This work can be extended in several directions to further understand memory pressure behavior in virtualized systems.
+
+First, future experiments could explore more aggressive overcommitment scenarios to analyze swap-heavy behavior and its impact on performance and tail latency. Additionally, enabling hypervisor-level mechanisms such as memory ballooning would allow investigation of guest-host memory management interactions and their role in mitigating double paging.
+
+Second, the experimental design can be expanded to include multi-VM scenarios, where multiple virtual machines compete for host resources. This would provide a more realistic representation of cloud environments and enable deeper analysis of cross-VM interference.
+
+Third, incorporating real-world workloads with diverse memory access patterns would improve the external validity of the results. Applications such as databases or in-memory caches may exhibit different sensitivity to memory pressure compared to the synthetic workloads used in this study.
+
+Finally, future work could refine fairness analysis by exploring more sensitive metrics or workload configurations that better capture imbalance under contention, as the current results show limited variation in fairness across scenarios.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
