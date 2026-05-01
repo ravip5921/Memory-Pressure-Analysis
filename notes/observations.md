@@ -55,7 +55,7 @@ The goal of this experiment was to evaluate the impact of co-located memory-inte
   * Concurrency (`-c`) scaled per stress level: Moderate=15, High=10, Extreme=5
   * Keep-alive (`-k`) enabled
   * Timeout set to 600 s to prevent premature connection resets
-* **Baseline**: Defined as a container running alone without stress, with a fixed swappiness (collected under `results/baseline`).
+* **Baseline**: Defined as a container running alone without stress, with a fixed swappiness (collected under `experiments/results/baseline`).
 
 #### Host Metrics Collected
 
